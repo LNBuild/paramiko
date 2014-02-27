@@ -54,6 +54,7 @@ class AgentSSH(object):
     def __init__(self):
         self._conn = None
         self._keys = ()
+	self.xmit = threading.Lock()
 
     def get_keys(self):
         """
@@ -83,10 +84,12 @@ class AgentSSH(object):
         self._keys = ()
 
     def _send_message(self, msg):
+        self.xmit.acquire()
         msg = str(msg)
         self._conn.send(struct.pack('>I', len(msg)) + msg)
         l = self._read_all(4)
         msg = Message(self._read_all(struct.unpack('>I', l)[0]))
+        self.xmit.release()
         return ord(msg.get_byte()), msg
 
     def _read_all(self, wanted):
